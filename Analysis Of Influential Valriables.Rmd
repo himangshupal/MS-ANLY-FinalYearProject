@@ -1,0 +1,783 @@
+---
+title: "Analysis Of Influential Valriables"
+author: "Himangshu Pal"
+date: "February 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Libraries**
+
+
+```{r}
+library(lubridate)
+
+library(vcd)
+
+library(ggplot2)
+
+library(pastecs)
+
+library(gmodels)
+
+library(boot)
+
+library(corrplot)
+
+library(car)
+
+library(tree)
+
+library(pls)
+
+library(randomForest)
+
+
+
+```
+
+__Read input file.__ 
+```{r}
+
+myData <- read.csv("house_country.csv", header = T)
+
+```
+
+__Explore Data__
+
+
+```{r}
+
+str(myData)
+
+head(myData)
+
+names(myData)
+
+```
+
+__Let's work with the date field.__
+
+```{r}
+myDate <- myData$date
+
+myDate <- as.Date(myDate, "%m/%d/%Y")
+
+myMonth <- month(myDate, label = T)
+
+myMonth <- factor(myMonth, ordered = FALSE) 
+
+
+myMonth <- factor(myMonth)
+
+myYear <- year(myDate)
+
+myYear <- factor(myYear)
+
+```
+
+
+
+```{r}
+# housePrice is the new data frame with year and month, minus housing price index and date
+
+housePrice <- data.frame(obs_year = myYear,       
+                         obs_month = myMonth,
+                         myData[,-c(1,19)])
+
+
+sum(is.na(housePrice))   # No missing value
+
+
+```
+
+
+__Time Series Analysis__
+
+```{r}
+
+# Let's check how each parameter behave in time. 
+
+start_yr <- min(year(myDate))
+
+end_yr <- max(year(myDate)) 
+
+ts_obj1<- ts(housePrice$median_house_price, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj1,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Median House Price", main = "Year vs Price")
+
+
+ts_obj2<- ts(housePrice$NASDAQ_comp_index, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj2,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Stock Index", main = "Year vs Stock Market")
+
+
+ts_obj3<- ts(housePrice$total_unemployed, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj3,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Unemployment", main = "Year vs Unemployement")
+
+
+ts_obj4<- ts(housePrice$job_loser_rate, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj4,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Job Loser", main = "Year vs Job Loser")
+
+
+ts_obj5<- ts(housePrice$multi_job_holders, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj5,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Multiple Job Holder", main = "Year vs Multi Job Holder")
+
+
+ts_obj6<- ts(housePrice$not_in_labor_searched_for_work, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj6,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Not in labor pool", main = "Year vs Not in labor pool")
+
+
+ts_obj7<- ts(housePrice$job_leaver, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj7,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Job Leavers", main = "Year vs Job Leavers")
+
+
+ts_obj8<- ts(housePrice$more_than_15_weeks, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj8,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "No Job > 15 weeks", main = "Year vs Jobless > 15 weeks")
+
+
+ts_obj9<- ts(housePrice$disp_income, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj9,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Disposable", main = "Year vs Disposable Income")
+
+
+ts_obj10<- ts(housePrice$FRB_Rates, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj10,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "FRB Rates", main = "Year vs FRB Rates")
+
+
+ts_obj11<- ts(housePrice$gross_dom_prod, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj11,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "GDP", main = "Year vs GDP")
+
+
+ts_obj12<- ts(housePrice$consumer_price_index, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj12,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "CPI", main = "Year vs CPI")
+
+
+ts_obj13<- ts(housePrice$prod_price_index, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj13,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "PPI", main = "Year vs PPI")
+
+
+ts_obj14<- ts(housePrice$long_interest_rate, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj14,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Long Interest Rate", main = "Year vs Long Interest Rate")
+
+
+ts_obj15<- ts(housePrice$mortgage_Rate30, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj15,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "30 years Mortgage", main = "Year vs Mortgage Rate 30 yr")
+
+
+ts_obj16<- ts(housePrice$mortgage_Rate15, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj16,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "15 years Mortgage", main = "Year vs Mortgage Rate 15 yr")
+
+
+ts_obj17<- ts(housePrice$population, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj17,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Population", main = "Year vs Population")
+
+
+ts_obj18<- ts(housePrice$total_expenditures, start = c(start_yr, 1), frequency = 4)
+
+plot(ts_obj18,type= "l", lwd = 2, col = "blue", xlab = "Year", ylab = "Individual Expenditures", main = "Year vs Individual Expenditures")
+
+```
+
+
+__Let's bring up some plots and graphs to find some pattern.__
+
+```{r}
+
+# Response is median_house_price. So, she is the center attraction of all plots. 
+
+hist(housePrice$median_house_price, 
+     breaks = 15,
+     col = "grey",
+     xlab = "Median House Price",
+     main = "Histogram of Median House Price")
+box()
+
+
+hist(housePrice$median_house_price, 
+     freq = FALSE,
+     breaks = 15,
+     col = "grey",
+     xlab = "Median House Price",
+     main = "Histogram, rug plot, density curve")
+rug(jitter(housePrice$median_house_price))
+lines(density(housePrice$median_house_price), col = "red", lwd = 1)
+box()
+
+
+boxplot(housePrice$median_house_price ~ factor(housePrice$obs_month, ordered = F), 
+        varwidth = T, col = "grey", main = "Box Plot Median House Price Per Quater", xlab = "Month",
+        ylab = "Median House Price")
+box()
+```
+
+
+
+__Response variable's Relationship with Predictors and also verify the linearity__
+
+```{r}
+
+ggplot(data = housePrice, 
+       aes(x = population, y = median_house_price)) +
+    geom_point(pch=20, size = 2) +
+    geom_smooth(method = "lm", formula = y ~ x, color = "blue", linetype = 14) +
+    labs(title = "Population vs median house price", 
+         x = "Population", y = "Median House Price")
+# Relationship is non-linear between Population and Median house price 
+
+ggplot(data = housePrice,
+       aes(x = NASDAQ_comp_index, y = median_house_price)) +
+    geom_smooth(method = "lm", formula = y ~ x, color = "blue", linetype = 2) + #, formula = y ~ I(x ^ -2),) +
+    geom_point(pch = 15, size = 1) +
+    labs(title = "Stock Index vs median house price", 
+         x = "NASDAQ-Index", y = "Median House Price")
+
+
+
+```
+
+
+
+```{r}
+
+ggplot(data = housePrice,
+       aes(x = consumer_price_index, y = median_house_price)) +
+    geom_smooth(method = lm, formula = y ~ x, color = "blue", linetype = 2) +  #   ,formula = y ~ I(x ^ -2),
+    geom_point(size = 2) +
+    labs(title = "CPI vs median house price", 
+         x = "CPI", y = "Median House Price")
+
+    
+
+ggplot(data = housePrice,
+       aes(x = prod_price_index, y = median_house_price)) +
+    geom_smooth(method = lm, formula = y ~ x , color = "blue", linetype = 2) +
+    geom_point(size = 2) +
+    labs(title = "PPI vs median house price", 
+         x = "PPI", y = "Median House Price")
+
+    
+
+
+ggplot(data = housePrice,
+       aes(x = gross_dom_prod , y = median_house_price)) +
+    geom_smooth(method = lm,  formula = y ~ x, color = "blue", linetype = 2) + 
+    geom_point(size = 2) +
+    labs(title = "GDP vs median house price", x = "GDP", y = "Median House Price")
+
+
+```
+
+
+```{r}
+
+ggplot(data = housePrice,
+       aes(x = FRB_Rates, y = median_house_price)) +
+    geom_smooth(method = lm, formula = (y ~ x), color = "blue", linetype = 2) + #formula = y ~ poly(x , 9),
+    geom_point(size = 2) +
+    labs(title = "FRB_Rates vs median house price", 
+         x = "FRB_Rates", y = "Median House Price")
+
+
+
+ggplot(data = housePrice,
+       aes(x = long_interest_rate  , y = median_house_price)) +
+    geom_smooth(method = lm, formula = (y ~ x), color = "blue", linetype = 2) +
+    geom_point(size = 2)    +
+    labs(title = "Long Interest Rates vs median house price", 
+         x = "Interest Rates", y = "Median House Price")
+
+
+
+ggplot(data = housePrice,
+       aes(x = mortgage_Rate30, y = median_house_price)) +
+    geom_smooth(method = lm, formula = y ~ x, color = "blue", linetype = 2) +
+    geom_point(size = 2)    +
+    labs(title = "Mortgage rate 30 yr vs median house price", 
+         x = "Mortgare rate 30 yr", y = "Median House Price")
+
+
+ggplot(data = housePrice,
+       aes(x = mortgage_Rate15 , y = median_house_price)) +
+    geom_smooth(method = lm, formula = y ~ x, color = "blue", linetype = 2) +
+    geom_point(size = 2)    +
+    labs(title = "Mortgage rate 15 yr vs median house price", 
+         x = "Mortgage rate 15 yr", y = "Median House Price")
+
+```
+
+
+
+```{r}
+ggplot(data = housePrice,
+       aes(x = total_expenditures, y = median_house_price)) +
+    geom_smooth(method = lm, formula = y ~ x, color = "blue", linetype = 2) +
+    geom_point(size = 2) +
+    labs(title = "total expenditures vs median house price", 
+         x = "total_expenditures", y = "Median House Price")
+
+
+ggplot(data = housePrice,
+       aes(x = disp_income, y = median_house_price)) +
+    geom_smooth(method = lm, formula = y ~ x, color = "blue", linetype = 2) +
+    geom_point(size = 2)    +
+    labs(title = "Disposable Income vs median house price", 
+         x = "Disposable Income", y = "Median House Price")
+
+```
+
+__Employement__
+
+```{r}
+
+ggplot(data = housePrice,
+       aes(x = multi_job_holders, y = median_house_price)) +
+       geom_smooth(method = lm, formula = y ~ x, se = F, color = "blue", linetype = 3) +
+       geom_point(size = 2) +
+       labs(title = "Multi job holders vs median house price", 
+         x = "Multi Job Holders", y = "Median House Price")
+
+
+ggplot(data = housePrice,
+       aes(x = job_loser_rate , y = median_house_price)) +
+       geom_smooth(method = lm, formula = y ~ x , se = T, color = "blue", linetype = 3) +
+       geom_point(size = 2) +
+       labs(title = "Job Loser Rate vs median house price", 
+         x = "Job Loser Rate", y = "Median House Price")
+
+
+ggplot(data = housePrice,
+       aes(x = more_than_15_weeks, y = median_house_price)) +
+       geom_smooth(method = lm, formula = y ~ x, se = F, color = "blue", linetype = 3) +
+       geom_point(size = 2) +
+       labs(title = "Job less > 15 weeks vs median house price", 
+         x = "Job less > 15 weeks", y = "Median House Price")
+
+
+ggplot(data = housePrice,
+       aes(x = not_in_labor_searched_for_work, y = median_house_price)) +
+      geom_smooth(method = lm, formula = y ~ x, se = FALSE, size = 1, color = "blue", linetype = 3) +
+      geom_point(size = 2)    +
+      labs(title = "Not in labor pool vs median house price", 
+         x = "Not in labor pool ", y = "Median House Price")
+
+
+ggplot(data = housePrice,
+       aes(x = total_unemployed , y = median_house_price)) +
+       geom_smooth(method = lm, formula = y ~  x, se = F, color = "blue", linetype = 3) +
+       geom_point(size = 2) +
+       labs(title = "Unemployed vs median house price", 
+         x = "Unemployed ", y = "Median House Price")
+
+
+
+ggplot(data = housePrice,
+       aes(x = job_leaver, y = median_house_price)) +
+       geom_smooth(method = lm,formula = y ~ x , se = FALSE, size = 1, color = "blue", linetype = 3) +
+       geom_point(size = 2)    +
+       labs(title = "  Job leaver vs median house price", 
+         x = " Job leaver ", y = "Median House Price")
+
+
+
+```
+
+
+__Descriptive Analysis__
+
+```{r}
+# Let's look at measures of central tendency, variablility and destribution shape of continuous variables. 
+
+# Summary 
+
+summary(housePrice)
+
+```
+
+__Standardize data__
+
+```{r}
+
+myData1 = housePrice[,-c(1:2)]  # No need of year and month
+
+#myData1 = housePrice
+
+myData1= scale(myData1, center =T, scale = T)
+
+housePrice_scale = myData1
+
+housePrice1 = myData1
+
+housePrice1 = as.data.frame(housePrice1)
+
+names(housePrice1) <- c("cpi", "ppi", "income", "gdp", "frb","expence","interest", "mrate15","mrate30","stock","unemp","looser","multijob", "nojobsearch","leaver","nojob15","popu","medHouse")
+
+head(housePrice1)
+
+```
+
+__Correlation Matrix__
+
+```{r}
+m <- cor(housePrice_scale)
+
+rownames(m) <- c("cpi", "ppi", "income", "gdp", "frb","expence","interest", "mrate15","mrate30","stock","unemp","looser","multijob", "nojobsearch","leaver","nojob15","popu","medHouse")
+
+colnames(m) <- c("cpi", "ppi", "income", "gdp", "frb","expence","interest", "mrate15","mrate30","stock","unemp","looser","multijob", "nojobsearch","leaver","nojob15","popu","medHouse")
+
+
+
+corrplot.mixed(m, lower.col = "black", number.cex = .7, tl.cex=.7 )
+
+```
+
+
+
+__Random Sample for Training and Test sets__
+
+```{r}
+
+head(housePrice1)
+
+attach(housePrice1)
+
+#x = model.matrix(medHouse ~., housePrice1)[,-1]
+#y = housePrice1$medHouse
+
+
+set.seed(1)
+
+#train = sample(1:nrow(x), round(nrow(x) * .75))
+
+train_index = sample(1:nrow(housePrice1), round(nrow(housePrice1) * .75))
+
+train = housePrice1[train_index,]
+test = housePrice1[-train_index,-18]
+#y.test = y[test]
+y.test = housePrice1[-train_index, 18]
+
+```
+
+__Subset Selection For Linear Regression__
+
+```{r}
+# PCR
+
+## I need to FIX PCR
+
+#set.seed(1)
+
+#pcr.fit = pcr(medHouse ~ . , data = housePrice1, subset = train, scale = TRUE, validation = "CV")
+
+set.seed(1)
+
+pcr.fit = pcr(medHouse ~ . , data = housePrice1,  scale = TRUE, validation = "CV")
+
+validationplot(pcr.fit, val.type = "R2")
+
+summary(pcr.fit)
+
+#dimnames(housePrice1)
+#pcr.pred = predict(pcr.fit, x[test,], ncomp = 10)
+
+pcr.fit = pcr(medHouse~., data = train, scale = TRUE, validation = "CV")
+
+pcr.pred = predict(pcr.fit, data = test, ncomp = 2)
+
+mean((pcr.pred - y.test) ^ 2)
+
+
+
+#pcr.fit = pcr(y ~ x, scale = TRUE, ncomp = 10)
+
+pcr.fit = pcr(y ~ x, data = scale = TRUE, ncomp = 2)
+
+pcr.fit$coefficients
+
+
+summary(pcr.fit)
+
+mean((pcr.pred - y.test) ^ 2)
+
+par(mfrow = c(3,1))
+validationplot(pcr.fit)
+validationplot(pcr.fit, val.type = "MSEP")
+validationplot(pcr.fit, val.type = "R2")
+
+predplot(pcr.fit)
+
+coefplot(pcr.fit)
+
+```
+
+
+```{r}
+# PLS
+
+set.seed(1)
+
+pls.fit = plsr(medHouse ~. , data = housePrice1, subset = train, scale = TRUE, validation = "CV")
+
+summary(pls.fit)
+
+# M =13, 99.97% 
+
+pls.pred = predict(pls.fit, x[test,], ncomp = 10)
+
+mean((pls.pred - y.test) ^ 2)
+
+#Full data set
+
+pls.fit = plsr(medHouse ~ . , data = housePrice1, scale = TRUE, ncomp =10)
+
+summary(pls.fit)
+
+plot(pls.fit)
+
+par(mfcol = c(3,1))
+
+validationplot(pls.fit)
+validationplot(pls.fit, val.type = "MSEP")
+validationplot(pls.fit, val.type = "R2")
+
+```
+
+__Non-linear regression__
+
+```{r}
+
+set.seed(1)
+
+tree.house = tree(medHouse ~.,housePrice1, subset = train)
+
+summary(tree.house)
+
+plot(tree.house)
+
+text(tree.house, pretty = 0)
+
+
+#prunning the tree
+cv.house = cv.tree(tree.house)
+
+plot(cv.house$size, cv.house$dev, type = "b")
+
+#minimum error occured for tree size 5.
+
+prune.house = prune.tree(tree.house, best = 5) 
+
+plot(prune.house)
+
+text(prune.house, pretty = 0)
+
+
+#Prediction and validation 
+yhat = predict(tree.house, newdata = housePrice1[-train,])
+
+house.test = housePrice1[-train, "medHouse"]
+
+plot(yhat, house.test)
+abline(0,1)
+
+mean((yhat - house.test)^2)
+
+#0.03445708
+
+```
+
+__Bagging__
+
+
+```{r}
+
+set.seed(1)
+
+bag.house = randomForest(medHouse ~., data = housePrice1, subset = train, mtry = ncol(housePrice1) - 1, importance = T)
+
+importance(bag.house)
+
+#cpi         11.097628   10.38535960
+#ppi         13.091498   13.70898383
+#gdp         12.867463   11.50522481
+
+#plot(bag.house)
+#text(bag.house, pretty = 0)
+
+yhat.bag = predict(bag.house, newdata = housePrice1[-train,])
+
+plot(yhat.bag, house.test)
+abline(0,1)
+
+mean((yhat.bag - house.test)^2)
+
+
+#0.009225094
+#cpi         0.2005510032   10.46006450
+#ppi         0.2712617087   14.48534045
+
+
+#Again bagging using ntree option
+
+bag.house = randomForest(medHouse~.,data = housePrice1, subset = train, mtry = ncol(housePrice1)-1, ntree = 25)
+
+yhat.bag = predict(bag.house, newdata = housePrice1[-train,])
+
+mean((yhat.bag - house.test) ^2)
+
+importance(bag.house)
+#0.01088559
+#0.0124372
+
+```
+
+
+
+__Random Forest__
+
+```{r}
+set.seed(1)
+
+rf.house = randomForest(medHouse~.,data = housePrice1, subset = train, mtry = 6, importance = T)
+
+plot(rf.house)
+
+yhat.rf = predict(rf.house, newdata = housePrice1[-train,]) 
+
+mean((yhat.rf - house.test) ^ 2)    #MSE
+
+#0.008968475
+#0.009251125
+
+importance(rf.house)
+
+#cpi         12.320385   11.90178430
+#income      11.257960   10.39671223
+#gdp         12.510731   12.01185450
+#popu        12.568885   10.92544258
+
+varImpPlot(rf.house, pch = 20)
+```
+
+
+__Boosting__
+
+
+```{r}
+library(gbm)
+
+set.seed(1)
+
+boost.house = gbm(medHouse~., data = housePrice1[train,], distribution = "gaussian",
+                  n.tree = 5000, interaction.depth = 4)
+
+summary(boost.house)
+
+par(mfrow = c(1,2))
+plot(boost.house, i = "cpi")
+plot(boost.house, i = "ppi")
+
+#Prediction 
+
+yhat.boost = predict(boost.house, newdata = housePrice1[-train,], n.tree = 5000)
+
+mean((yhat.boost - house.test) ^ 2)
+
+#0.01115614
+
+
+#Boosting with shrinkage (lambda) = 0.2
+
+boost.house = gbm(medHouse~., data = housePrice1[train,], distribution = "gaussian",
+                     n.trees = 5000, interaction.depth = 4, shrinkage = .2, verbose = F)
+
+yhat.boost = predict(boost.house, newdata = housePrice1[-train, ], n.trees = 5000)
+
+mean((yhat.boost - house.test)^2)
+
+#0.0163058
+```
+
+__Dimension Reduction__
+
+
+```{r}
+
+# PCA 
+
+
+pr.out = prcomp(housePrice1[,-18], scale = F) 
+
+print(pr.out)
+
+#names(pr.out)
+
+summary(pr.out)
+
+plot(pr.out, type = "l")
+
+# center = mean
+# scale = SD
+
+pr.out$center
+
+pr.out$scale
+
+pr.out$rotation
+
+dim(pr.out$x)
+
+biplot(pr.out, scale = 0)
+
+#?biplot
+
+pr.out$rotation = -pr.out$rotation
+
+pr.out$x = -pr.out$x
+
+biplot(pr.out, scale = 0,cex = .9 )
+
+print(pr.out$rotation)
+#?biplot
+
+pr.out$sdev
+
+pr.var = pr.out$sdev ^ 2
+pr.var
+
+
+pve = pr.var/sum(pr.var)
+
+
+
+pve
+
+par(mfrow = c(1,2))
+
+plot(pve, xlab = "Principal Component", ylab = "Proportion of Variance Explained",
+     ylim = c(0,1), type = "b")
+
+plot(cumsum(pve), xlab = "Principal Component", ylab = "Cumulative Proportion of Variance Explained",
+     ylim = c(0,1), type = "b")
+
+
+
+
+```
+
